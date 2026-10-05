@@ -98,6 +98,8 @@
     const SHEETS = ["AMEA", "EUAM", "AUNZ"];
     const STATUS_COLORS = { "Backlog": "#808080", "Open": "#3c96bc", "Fix in Progress": "#e7af00", "Fix In Progress": "#e7af00", "Ready in UAT": "#27488b", "Passed in UAT": "#6cc080", "Failed in UAT": "#ffa396", "For Client Review": "#e4eafc", "Client Test": "#9ae2ca", "Close": "#6cc080", "Closed": "#6cc080" };
     const FALLBACK = ["#4c78a8", "#72b7b2", "#e45756", "#b279a2", "#54a24b", "#f58518"];
+    const EXPORT_WIDTH = 945;
+    const EXPORT_HEIGHT = 560;
     const PALETTE_KEY = "doughnut-chart-palette-v1";
     const $ = (id) => document.getElementById(id);
     function loadPalette() {
@@ -175,15 +177,15 @@
         ctx.fillStyle = "#008326";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = chart.options.plugins.centerText.compact ? "700 34px 'DM Sans', sans-serif" : "700 46px 'DM Sans', sans-serif";
+        ctx.font = chart.options.plugins.centerText.compact ? "700 34px 'DM Sans', sans-serif" : chart.options.plugins.centerText.slide ? "700 64px 'DM Sans', sans-serif" : "700 46px 'DM Sans', sans-serif";
         ctx.fillText(`${percentage(fixed(rows), total(rows))}%`, centerX, centerY - 14);
-        ctx.font = chart.options.plugins.centerText.compact ? "700 15px 'DM Sans', sans-serif" : "700 21px 'DM Sans', sans-serif";
+        ctx.font = chart.options.plugins.centerText.compact ? "700 15px 'DM Sans', sans-serif" : chart.options.plugins.centerText.slide ? "700 30px 'DM Sans', sans-serif" : "700 21px 'DM Sans', sans-serif";
         ctx.fillText("FIXED", centerX, centerY + 34);
         ctx.restore();
       }
     };
 
-    function makeChart(canvas, sheet, compact = false) {
+    function makeChart(canvas, sheet, compact = false, slide = false) {
       const rows = state.data[sheet].filter((row) => activeStatuses().includes(row.status));
       const sum = total(rows);
       const palette = colors();
@@ -197,8 +199,8 @@
         options: {
           responsive: false, animation: false, cutout: "60%", layout: { padding: 20 },
           plugins: {
-            centerText: { rows, compact }, tooltip: { enabled: false },
-            legend: { display: !compact, position: "right", onClick: () => {}, labels: { boxWidth: 22, boxHeight: 14, padding: 15, color: "#202a2d", font: { family: "DM Sans", size: 15 } } }
+            centerText: { rows, compact, slide }, tooltip: { enabled: false },
+            legend: { display: !compact, position: "right", onClick: () => {}, labels: { boxWidth: slide ? 30 : 22, boxHeight: slide ? 24 : 14, padding: slide ? 8 : 15, color: "#202a2d", font: { family: "DM Sans", size: slide ? 34 : 15 } } }
           }
         }
       });
@@ -317,9 +319,9 @@
 
     function chartImage(sheet) {
       const canvas = document.createElement("canvas");
-      canvas.width = 960;
-      canvas.height = 560;
-      const chart = makeChart(canvas, sheet);
+      canvas.width = EXPORT_WIDTH;
+      canvas.height = EXPORT_HEIGHT;
+      const chart = makeChart(canvas, sheet, false, true);
       const image = canvas.toDataURL("image/png");
       chart.destroy();
       return image;
@@ -328,7 +330,30 @@
     function imageBlob(image) {
       const binary = atob(image.split(",")[1]);
       const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-      return new Blob([bytes], { type: "image/png" });
+      const view = new DataView(bytes.buffer);
+      const resolution = new Uint8Array(21);
+      const chunk = new DataView(resolution.buffer);
+      chunk.setUint32(0, 9);
+      resolution.set([112, 72, 89, 115], 4);
+      chunk.setUint32(8, Math.round(300 / 0.0254));
+      chunk.setUint32(12, Math.round(300 / 0.0254));
+      resolution[16] = 1;
+      let crc = -1;
+      for (let index = 4; index < 17; index++) {
+        crc ^= resolution[index];
+        for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+      }
+      chunk.setUint32(17, (crc ^ -1) >>> 0);
+      const afterHeader = 8 + 12 + view.getUint32(8);
+      let offset = afterHeader;
+      while (offset < bytes.length) {
+        const length = view.getUint32(offset);
+        const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));
+        if (type === "pHYs") return new Blob([bytes.subarray(0, offset), resolution, bytes.subarray(offset + 12 + length)], { type: "image/png" });
+        if (type === "IDAT") break;
+        offset += 12 + length;
+      }
+      return new Blob([bytes.subarray(0, afterHeader), resolution, bytes.subarray(afterHeader)], { type: "image/png" });
     }
 
     $("upload").addEventListener("click", () => $("file").click());
@@ -379,8 +404,8 @@
       try {
         const zip = new JSZip();
         const combined = document.createElement("canvas");
-        combined.width = 960 * SHEETS.length;
-        combined.height = 560;
+        combined.width = EXPORT_WIDTH * SHEETS.length;
+        combined.height = EXPORT_HEIGHT;
         const context = combined.getContext("2d");
         context.fillStyle = "#fff";
         context.fillRect(0, 0, combined.width, combined.height);
@@ -390,7 +415,7 @@
           const picture = new Image();
           picture.src = image;
           await picture.decode();
-          context.drawImage(picture, index * 960, 0);
+          context.drawImage(picture, index * EXPORT_WIDTH, 0);
         }
         zip.file("ALL.png", imageBlob(combined.toDataURL("image/png")));
         download(await zip.generateAsync({ type: "blob" }), "doughnut-charts.zip");

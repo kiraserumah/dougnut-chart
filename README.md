@@ -9,6 +9,8 @@ Web app statis untuk mengedit nilai dan membuat doughnut chart dari Excel. Buka 
 2. Ubah kolom `Adjusted` pada tab region. Klik kotak warna di samping status untuk mengganti warna chart pada semua region; **Reset warna** mengembalikan palet awal. Chart langsung diperbarui. Unduh Excel untuk menyimpan nilai yang sudah diedit.
 3. Unduh PNG region yang aktif, atau unduh semua PNG sekaligus sebagai ZIP berisi `AMEA.png`, `EUAM.png`, `AUNZ.png`, dan `ALL.png`.
 
+PNG tiap region disiapkan untuk slide pada 300 DPI: 945 x 560 piksel, sekitar 8 x 4,74 cm. PNG `ALL.png` menggabungkan tiga region dalam ukuran sekitar 24 x 4,74 cm. Jika aplikasi slide tidak membaca metadata DPI, atur ukuran gambar secara manual sesuai angka tersebut.
+
 Persentase `FIXED` dihitung dari `Adjusted Value` berstatus `Close` atau `Closed` dibagi total `Adjusted Value` region. Workbook diproses di browser, tanpa dikirim ke server aplikasi. Halaman membutuhkan internet untuk memuat SheetJS, Chart.js, JSZip, dan font dari CDN; untuk data sensitif, host salinan library tersebut sendiri sebelum dipakai secara produksi.
 
 Warna pilihan tersimpan di browser (`localStorage`) pada perangkat tersebut, bukan di file Excel. Untuk memakai palet yang sama di perangkat lain, pilih kembali warnanya di sana.
