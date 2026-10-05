@@ -16,6 +16,7 @@ SHEETS = ["AMEA", "EUAM", "AUNZ"]
 STATUS_COLORS = {
     "Backlog": "#808080",
     "Open": "#3c96bc",
+    "Fix in Progress": "#e7af00",
     "Fix In Progress": "#e7af00",
     "Ready in UAT": "#27488b",
     "Passed in UAT": "#6cc080",

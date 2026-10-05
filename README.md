@@ -5,6 +5,7 @@ Web app statis untuk mengedit nilai dan membuat doughnut chart dari Excel. Buka 
 ## Pakai
 
 1. Pilih workbook `.xlsx` dengan sheet `AMEA`, `EUAM`, dan `AUNZ`. Bisa memakai workbook sumber (`Status`, `Value`) atau workbook hasil edit (`Status`, `Value`, `Adjusted Value`).
+	Status yang digunakan: `Backlog`, `Open`, `Fix in Progress`, `Ready in UAT`, `Passed in UAT`, `Failed in UAT`, `For Client Review`, `Client Test`, dan `Closed`. Ejaan lama `Fix In Progress` serta `Close` tetap diterima.
 2. Ubah kolom `Adjusted` pada tab region. Klik kotak warna di samping status untuk mengganti warna chart pada semua region; **Reset warna** mengembalikan palet awal. Chart langsung diperbarui. Unduh Excel untuk menyimpan nilai yang sudah diedit.
 3. Unduh PNG region yang aktif, atau unduh semua PNG sekaligus sebagai ZIP berisi `AMEA.png`, `EUAM.png`, `AUNZ.png`, dan `ALL.png`.
 
